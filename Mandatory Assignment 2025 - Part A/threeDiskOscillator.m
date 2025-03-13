@@ -84,7 +84,7 @@ ST_sys =...
 ST_sys=sa_match(ST_sys,'rank')
 
 % Create report
-sa_report(ST_sys,'Assignment_A','pdf','analytic_expressions',false); 
+%sa_report(ST_sys,'Assignment_A','pdf','analytic_expressions',false); 
 
 % Create  matching
 disp('Obtained matching:');
@@ -102,6 +102,26 @@ sa_disp(ST_sys, 'a');
 syms s
 a1 = (u_2 - b_2*y_2*s + k_1*y_1 - k_1*y_2 - k_2*y_2 + k_2*y_3)/J_2 - y_2*s^2;
 a2 = (k_2*(y_2(t) - y_3(t)) - b_3*y_3*s)/J_3 - y_3*s^2;
+
+syms lambda
+
+a1-lambda*a2
+% Define lambda
+solve(0==k_2/J_2+(lambda*k_2)/J_3+(lambda*b_3*s)/J_3-lambda*s^(2),lambda)
+lambda = - (J_3*k_2) / (J_2*J_3*s^2 - J_2*b_3*s + J_2*k_2);
+
+% Compute a3 = a1 - lambda * a2
+a3 = simplify(a1 - lambda * a2);
+
+% Solve for y3 in terms of other variables
+y3_expr = solve(a2, y_3);
+
+% Substitute y3 into a3 to eliminate it
+a3_no_y3 = simplify(subs(a3, y_3, y3_expr));
+a3 = a3_no_y3
+disp('Simplified a3 without y3:');
+disp(a3);
+
 
 %% Adjusted filter parameters based on system dynamics
 wn = 15;  % Cutoff frequency (rad/s), chosen below the system's resonant frequencies
@@ -149,8 +169,8 @@ x_0 = [0;0;0;0;0;0];            % Initial conditions
 T_s = 0.004;                    % Sampling period
 sigma_meas = 0.0093*eye(3);     % Measurements covariance matrix
 
-H_ry = [k_1/J_2 (-k_1-k_2-b_2*s-J_2*s^2)/J_2 k_2/J_2; ...
-   0 k_2/J_3 (-k_2-b_3*s-s^2*J_3)/J_3]
+H_ry = [k_1/J_2 (-k_1-k_2-b_2*s)/J_2-s^2 k_2/J_2; ...
+   0 k_2/J_3 (-k_2-b_3*s)/J_3-s^2]
 H_ru = [0 tf(1); 0 0]
 
 sys_y = H*H_ry
@@ -293,6 +313,44 @@ title('Step Response of Discretized Residual System');
 xlabel('Time (seconds)');
 ylabel('Response');
 grid on;
+%%
+%%Opgave 3
+% Load the .mat file
+ECP_Data = load("ECP502Data.mat");
+
+% Extract variables
+ECP_t = ECP_Data.t;       % Time vector
+ECP_u_1 = ECP_Data.u_1;   % First control input
+ECP_u_2 = ECP_Data.u_2;   % Second control input
+ECP_y_meas = ECP_Data.y_meas; % Measured output
+
+% Create figure with subplots
+%figure;
+%simIn = Simulink.SimulationInput("ActuatorSystem");
+%simIn = simIn.setExternalInput([ECP_t, ECP_u_1, ECP_u_2]); % Time + Inputs
+Tsim = 100;
+simout = sim("threeDiskOscillatorRig");
+
+% First subplot: u_1 and u_2 vs time
+figure;
+subplot(2,1,1);
+plot(ECP_t, ECP_u_1, 'b', 'LineWidth', 1.5); hold on;
+plot(ECP_t, ECP_u_2, 'r', 'LineWidth', 1.5);
+xlabel('Time (s)');
+ylabel('Control Inputs');
+legend('u_1', 'u_2');
+title('ECP Control Inputs vs Time');
+grid on;
+
+% Second subplot: y_meas vs time
+subplot(2,1,2);
+plot(ECP_t, ECP_y_meas, 'k', 'LineWidth', 1.5);
+xlabel('Time (s)');
+ylabel('Measured Output');
+title('ECP Measured Output vs Time');
+grid on;
+% Display the figure
+hold off;
 
 %% Strong and weak detectability
 H_rf = tf(0);
