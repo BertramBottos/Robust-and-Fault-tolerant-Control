@@ -2,20 +2,6 @@ clear all;
 close all;
 clc;
 addpath("C:\Users\botto\OneDrive\Backup\Bertram lenovo\DTU\34746 Robust and Fault-tolerant Control\Exercise\SA Tool\SaTool_3_0100\sa_tool_3_0100\");
-load('ECP_values.mat');
-% Physical system parameters
-J_1 = ECP_values(1);            % Disk 1 inertia kgm^2
-J_2 = ECP_values(2);            % Disk 2 inertia kgm^2
-J_3 = ECP_values(3);            % Disk 3 inertia kgm^2
-k_1 = ECP_values(4);            % Shaft 1-2 stiffness Nm/rad
-k_2 = ECP_values(5);            % Shaft 2-3 stiffness Nm/rad
-b_1 = mean(ECP_values([6 7]));  % Disk 1 damping and friction Nms/rad
-b_2 = mean(ECP_values([8 9]));  % Disk 2 damping and friction Nms/rad
-b_3 = mean(ECP_values([10 11]));% Disk 3 damping and friction Nms/rad
-T_Cp = ECP_values(12);          % Disk 1 Coulomb friction in positive direction
-T_Cm = ECP_values(13);          % Disk 1 Coulomb friction in negative direction
-atan_scale = 100;               % Sign approximation factor
-w_th = 0.75;                    % Threshold angular velocity rad/s
 
 % The system states are [theta_1;omega_1;theta_2;omega_2;theta_3;omega_3]
 x_0 = [0;0;0;0;0;0];            % Initial conditions
@@ -124,6 +110,22 @@ a3 = a3_no_y3
 disp('Simplified a3 without y3:');
 disp(a3);
 %% State space representation
+load('ECP_values.mat');
+load('ECP502Data.mat');
+% Physical system parameters
+J_1 = ECP_values(1);            % Disk 1 inertia kgm^2
+J_2 = ECP_values(2);            % Disk 2 inertia kgm^2
+J_3 = ECP_values(3);            % Disk 3 inertia kgm^2
+k_1 = ECP_values(4);            % Shaft 1-2 stiffness Nm/rad
+k_2 = ECP_values(5);            % Shaft 2-3 stiffness Nm/rad
+b_1 = mean(ECP_values([6 7]));  % Disk 1 damping and friction Nms/rad
+b_2 = mean(ECP_values([8 9]));  % Disk 2 damping and friction Nms/rad
+b_3 = mean(ECP_values([10 11]));% Disk 3 damping and friction Nms/rad
+T_Cp = ECP_values(12);          % Disk 1 Coulomb friction in positive direction
+T_Cm = ECP_values(13);          % Disk 1 Coulomb friction in negative direction
+atan_scale = 100;               % Sign approximation factor
+w_th = 0.75;                    % Threshold angular velocity rad/s
+
 A = [0 1 0 0 0 0
     -k_1/J_1 -b_1/J_1 k_1/J_1 0 0 0
     0 0 0 1 0 0
@@ -200,51 +202,18 @@ L_aug = dlqe(F_aug, eye(7), C_aug, 1e-3 * eye(7), sigma_meas(1,1).^2 * eye(3));
 L_o = L_aug(1:6,:);
 L_d = L_aug(7,:);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Adjusted filter parameters based on system dynamics
+%% This is the one we run with
+
 wn = 15;  % Cutoff frequency (rad/s), chosen below the system's resonant frequencies
 zeta = 0.707;  % Damping ratio (Butterworth design)
 
 % Define second-order low-pass filter
 s = tf('s');
 H = (wn^2) / (s^2 + 2*zeta*wn*s + wn^2);
-
-%filter response
-% Frequency response
-%bode(H);
-%grid on;
-
-% Step response
-%figure;
-%step(H);
-%grid on;
-%title('Step Response of Adjusted Low-Pass Filter');
-
 % Display the transfer function
 disp('Adjusted Second-Order Low-Pass Filter Transfer Function:');
 H
 
-%having [r1, r2]' = Hy*[y1,y2,y3]' + Hu*[u1,u2]'
-load('ECP_values.mat');
-load('ECP502Data.mat')
-f_m_time = 8.5;                 % Sensor fault occurence time
-% Physical system parameters
-J_1 = ECP_values(1);            % Disk 1 inertia kgm^2
-J_2 = ECP_values(2);            % Disk 2 inertia kgm^2
-J_3 = ECP_values(3);            % Disk 3 inertia kgm^2
-k_1 = ECP_values(4);            % Shaft 1-2 stiffness Nm/rad
-k_2 = ECP_values(5);            % Shaft 2-3 stiffness Nm/rad
-b_1 = mean(ECP_values([6 7]));  % Disk 1 damping and friction Nms/rad
-b_2 = mean(ECP_values([8 9]));  % Disk 2 damping and friction Nms/rad
-b_3 = mean(ECP_values([10 11]));% Disk 3 damping and friction Nms/rad
-T_Cp = ECP_values(12);          % Disk 1 Coulomb friction in positive direction
-T_Cm = ECP_values(13);          % Disk 1 Coulomb friction in negative direction
-atan_scale = 100;               % Sign approximation factor
-w_th = 0.75;                    % Threshold angular velocity rad/s
-
-% The system states are [theta_1;omega_1;theta_2;omega_2;theta_3;omega_3]
-x_0 = [0;0;0;0;0;0];            % Initial conditions
-T_s = 0.004;                    % Sampling period
-sigma_meas = 0.0093*eye(3);     % Measurements covariance matrix
 
 H_ry = [k_1/J_2 (-k_1-k_2-b_2*s)/J_2-s^2 k_2/J_2; ...
    0 k_2/J_3 (-k_2-b_3*s)/J_3-s^2]
@@ -258,7 +227,6 @@ T_s = 4e-3; % Sampling period (4 ms)
 dsys = c2d(sys,T_s, 'zoh')
 
 
-
 % Display the discretized model
 disp(dsys);
 
@@ -268,66 +236,22 @@ title('Step Response of Discretized Residual System');
 xlabel('Time (seconds)');
 ylabel('Response');
 grid on;
-%% Residual filter design
 
-wn = 15;  % Cutoff frequency (rad/s), chosen below the system's resonant frequencies
-zeta = 0.707;  % Damping ratio (Butterworth design)
 
-% Define second-order low-pass filter
-s = tf('s');
-syms s
-H = (wn^2) / (s^2 + 2*zeta*wn*s + wn^2);
-% Display the transfer function
-disp('Adjusted Second-Order Low-Pass Filter Transfer Function:');
-H
 
-%having [r1, r2]' = Hy*[y1,y2,y3]' + Hu*[u1,u2]'
-% List of Parameters
-J_1 = 0.0025; %Bottom disk moment of inertia
-J_2 = 0.0018; %Middle disk moment of inertia
-J_3 = 0.001; %adjust just something random we imagined !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-k_1 = 2.7; %Stiffness of the bottom shaft
-k_2 = 2.6; %Stiffness of the middle shaft
-b_1 = 0.0029; %Damping/friction on the bottom disk
-b_2 = 0.0002; %Damping/friction on the middle disk
-b_3 = 0.00015; %Damping/friction on the top disk
-
-H_ry = [k_1/J_2 (-k_1-k_2-b_2*s-J_2*s^2)/J_2 k_2/J_2; ...
-   0 k_2/J_3 (-k_2-b_3*s-s^2*J_3)/J_3]
-H_ru = [0 tf(1); 0 0]
-
-sys_y = H*H_ry
-sys_u = H*H_ru
-
-sys = sys_u+sys_u
-Ts = 4e-3; % Sampling period (4 ms)
-dsys = c2d(sys,Ts, 'zoh')
-
-% Display the discretized model
-disp(dsys);
-
-figure;
-step(dsys);
-title('Step Response of Discretized Residual System');
-xlabel('Time (seconds)');
-ylabel('Response');
-grid on;
-%%
-%%Opgave 3
-% Load the .mat file
-ECP_Data = load("ECP502Data.mat");
-
+%% Simulation Opgave 3
 % Extract variables
-ECP_t = ECP_Data.t;       % Time vector
-ECP_u_1 = ECP_Data.u_1;   % First control input
-ECP_u_2 = ECP_Data.u_2;   % Second control input
-ECP_y_meas = ECP_Data.y_meas; % Measured output
+ECP_t = t;       % Time vector
+ECP_u_1 = u_1;   % First control input
+ECP_u_2 = u_2;   % Second control input
+ECP_y_meas = y_meas; % Measured output
 
 % Create figure with subplots
 %figure;
 %simIn = Simulink.SimulationInput("ActuatorSystem");
 %simIn = simIn.setExternalInput([ECP_t, ECP_u_1, ECP_u_2]); % Time + Inputs
 Tsim = 100;
+f_m_time = 8.5;                 % Sensor fault occurence time
 simout = sim("threeDiskOscillatorRig");
 
 % First subplot: u_1 and u_2 vs time
