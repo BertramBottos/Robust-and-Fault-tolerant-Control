@@ -250,7 +250,7 @@ ECP_y_meas = y_meas; % Measured output
 %figure;
 %simIn = Simulink.SimulationInput("ActuatorSystem");
 %simIn = simIn.setExternalInput([ECP_t, ECP_u_1, ECP_u_2]); % Time + Inputs
-Tsim = 100;
+simTime = 45;                   % Simulation duration in seconds
 f_m_time = 8.5;                 % Sensor fault occurence time
 simout = sim("threeDiskOscillatorRig");
 
