@@ -109,7 +109,7 @@ a3_no_y3 = simplify(subs(a3, y_3, y3_expr));
 a3 = a3_no_y3
 disp('Simplified a3 without y3:');
 disp(a3);
-subs(subs(a3,y_1,0),y_2,0);
+subs(a3,y_1)
 %% State space representation
 load('ECP_values.mat');
 load('ECP502Data.mat');
@@ -181,6 +181,8 @@ ymeas_ts = timeseries(y_meas, t);
 u1_ts = timeseries(u_1, t);
 u2_ts = timeseries(u_2, t);
 
+
+
 % State-feedback LQR design
 Q_c = diag([2 0 2 0 2.5 0.0024]);
 R_c = diag([10 10]);
@@ -189,6 +191,8 @@ K_c = dlqr(F_d, G_d, Q_c, R_c);
 % Scaling of reference
 C_3 = [0 0 0 0 1 0];
 C_ref = pinv(C_3 * ((eye(size(F_d,1)) - F_d + G_d * K_c) \ G_d) * K_c);
+
+
 
 % Kalman filter with friction estimation - DO NOT MODIFY
 F_aug = [F_d G_d(:,1);zeros(1,6) 1];
