@@ -291,9 +291,20 @@ grid on;
 hold off;
 
 %%
-%%Opgave4 
-%Hyu = C*inv((s*eye(size(A))-A))*B+D
+%%Opgave4  
+%from slide 11,12,27, lecture 5:
+syms s
+H_yu = C*inv((s*eye(size(A))-A))*B+D;
+H_yd = C*(inv(s*eye(size(A))-A))*E_x+E_y;
+H_yf = C*(inv(s*eye(size(A))-A))*F_x+F_y;
 
+% V_ry = H_ry as we defined earlier however this time se use the symbolic s. 
+V_ry = [k_1/J_2 (-k_1-k_2-b_2*s)/J_2-s^2 k_2/J_2; ...
+   0 k_2/J_3 (-k_2-b_3*s)/J_3-s^2]; 
+H_rf= V_ry*H_yf;
+
+%lecture 5 slide 23
+Rank([H_yd H_yf] >rank(H_yd))
 
 %% Strong and weak detectability
 H_rf = tf(0);
