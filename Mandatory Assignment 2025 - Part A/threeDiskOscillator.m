@@ -2,6 +2,8 @@ clear all;
 close all;
 clc;
 addpath("C:\Users\botto\OneDrive\Backup\Bertram lenovo\DTU\34746 Robust and Fault-tolerant Control\Exercise\SA Tool\SaTool_3_0100\sa_tool_3_0100\");
+addpath("C:\Users\nicol\OneDrive\Documents\34746 - Robust & Fault Tolerent Control\Exercises\SA Tool\SaTool_3_0100\sa_tool_3_0100");
+
 
 % The system states are [theta_1;omega_1;theta_2;omega_2;theta_3;omega_3]
 x_0 = [0;0;0;0;0;0];            % Initial conditions
@@ -157,13 +159,14 @@ E_y = [ 0
         0 
         0 ];
 
-% Actuator and system fault matrix (6x5)
+% Actuator and system fault matrix (6x5) %f ={row = size of input output, cols = size of state] 
 F_x = [0 0 0 0 0  
        0 0 0 1/J_1 0   
        0 0 0 0 0   
        0 1/J_2 0 0 1/J_2   
        0 0 0 0 0  
        0 0 0 0 0 ];
+
 
 % Sensor fault matrices Skal være 3x5
 F_y = [ 1 0 0 0 0
@@ -200,7 +203,6 @@ L_o = L_aug(1:6,:);
 L_d = L_aug(7,:);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% This is the one we run with
-
 wn = 15;  % Cutoff frequency (rad/s), chosen below the system's resonant frequencies
 zeta = 0.707;  % Damping ratio (Butterworth design)
 
@@ -246,9 +248,26 @@ ECP_y_meas = y_meas; % Measured output
 %figure;
 %simIn = Simulink.SimulationInput("ActuatorSystem");
 %simIn = simIn.setExternalInput([ECP_t, ECP_u_1, ECP_u_2]); % Time + Inputs
-simTime = 45;                   % Simulation duration in seconds
+simTime = 50;                   % Simulation duration in seconds
 f_m_time = 8.5;                 % Sensor fault occurence time
-simout = sim("threeDiskOscillatorRig");
+u_1 = [t u_1]
+u_2 = [t u_2]
+y_meas =[t y_meas]
+simout = sim("threeDiskOscillatorRig_v2");
+r1 = simout.residual_out.signals.values(:,1); 
+r2 = simout.residual_out.signals.values(:,2);
+
+% First subplot: r_1 and r_2 vs time
+figure;
+subplot(2,1,1);
+plot(t, r1, 'b', 'LineWidth', 1.5); hold on;
+plot(t, r2, 'r', 'LineWidth', 1.5);
+xlabel('Time (s)');
+ylabel('residual magnitude');
+legend('r_1', 'r_2');
+title('residuals vs Time');
+grid on;
+
 
 % First subplot: u_1 and u_2 vs time
 figure;
@@ -270,6 +289,11 @@ title('ECP Measured Output vs Time');
 grid on;
 % Display the figure
 hold off;
+
+%%
+%%Opgave4 
+%Hyu = C*inv((s*eye(size(A))-A))*B+D
+
 
 %% Strong and weak detectability
 H_rf = tf(0);
