@@ -258,8 +258,13 @@ H = (wn^2) / (s^2 + 2*zeta*wn*s + wn^2);
 disp('Adjusted Second-Order Low-Pass Filter Transfer Function:');
 H
 
+%H_ry = [k_1/J_2 (-k_1-k_2-b_2*s)/J_2-s^2 k_2/J_2; ...
+%   0 k_2/J_3 (-k_2-b_3*s)/J_3-s^2]
+%H_ru = [0 tf(1); 0 0]
+
 H_ry = [k_1/J_2 (-k_1-k_2-b_2*s)/J_2-s^2 k_2/J_2; ...
-   0 k_2/J_3 (-k_2-b_3*s)/J_3-s^2]
+   0 k_2/J_3 (-k_2-b_3*s)/J_3-s^2;
+   (k_1)/J_2 -((k_1*k_2+b_2*k_2*s+b_3*k_1*s+b_3*k_2*s+J_2*J_3*s^4+J_2*b_3*s^3+J_3*b_2*s^3+J_2*k_2*s^2+J_3*k_1*s^2+J_3*k_2*s^2+b_2*b_3*s^2))/(J_2*(J_3*s^2+b_3*s+k_2)) 0]
 H_ru = [0 tf(1); 0 0]
 
 sys_y = H*H_ry
