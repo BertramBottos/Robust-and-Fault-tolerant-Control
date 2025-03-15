@@ -138,12 +138,13 @@ H2_s = (1/J_3) * (k_2 / (s^2 + (b_3/J_3) * s + k_2/J_3));
 [H1_s_num, H1_s_den] = numden(H1_s);
 [H2_s_num, H2_s_den] = numden(H2_s);
 
+% Transfer Function
 H1_tf = tf(sym2poly(H1_s_num), sym2poly(H1_s_den));
 H2_tf = tf(sym2poly(H2_s_num), sym2poly(H2_s_den));
 
-
-H1_d = c2d(H1_tf, T_s, 'zoh');  % Discretizing H1(s)
-H2_d = c2d(H2_tf, T_s, 'zoh');  % Discretizing H2(s)
+% Discreticed with a sampling period of T_s = 4 ms.
+H1_d = c2d(H1_tf, T_s, 'zoh');  % Discretizing
+H2_d = c2d(H2_tf, T_s, 'zoh');  % Discretizing
 
 
 disp('Discrete-time Residual Generator H1(z):');
