@@ -8,10 +8,10 @@ addpath("C:\Users\nicol\OneDrive\Documents\34746 - Robust & Fault Tolerent Contr
 % The system states are [theta_1;omega_1;theta_2;omega_2;theta_3;omega_3]
 x_0 = [0;0;0;0;0;0];            % Initial conditions
 T_s = 0.004;                    % Sampling period
-sigma_meas = 0.0093*eye(3);     % Measurements covariance matrix
+sigma_meas = (0.0093^2)*eye(3);     % Measurements covariance matrix
 
 %% SA TOOL
-% Inputs
+% Inputus
 syms u_1(t) u_2(t) % Symbolic input declearation
 ST_input(1,:) = {u_1,u_2}; % symbolic variable
 ST_input(2,:) = {'u_1(t)','u_2(t)'}; % LaTeX expression
@@ -20,6 +20,7 @@ ST_input(2,:) = {'u_1(t)','u_2(t)'}; % LaTeX expression
 % Measurements
 syms y_1(t) y_2(t) y_3(t) % Symbolic measurement declearation
 ST_meas(1,:) = {y_1,y_2,y_3}; % symbolic variable
+
 ST_meas(2,:) = {'y_1(t)','y_2(t)','y_3(t)'}; % LaTeX expression
 
 
@@ -240,7 +241,7 @@ F_aug = [F_d G_d(:,1);zeros(1,6) 1];
 G_aug = [G_d;0 0];
 C_aug = [C zeros(3,1)];
 % Kalman gain
-sigma_meas = 0.0093*eye(3);     % Measurements covariance matrix
+sigma_meas = (0.0093^2)*eye(3);     % Measurements covariance matrix
 L_aug = dlqe(F_aug, eye(7), C_aug, 1e-3 * eye(7), sigma_meas(1,1).^2 * eye(3));
 L_o = L_aug(1:6,:);
 L_d = L_aug(7,:);
@@ -297,14 +298,14 @@ u_1 = [t u_1];
 u_2 = [t u_2];
 y_meas =[t y_meas]
 simout = sim("threeDiskOscillatorRig_v2");
-r1 = simout.residual_out.signals.values(:,1); 
-r2 = simout.residual_out.signals.values(:,2);
+r1 = simout.r.signals.values(:,1); 
+r2 = simout.r.signals.values(:,2);
 
 
 %%
 %creating plots for assignmnet 3
 % First subplot: r_1 and r_2 vs time
-tsim_nested = simout.residual_out.time; %dont know dont care why t = simulated time
+tsim_nested = simout.r.time; %dont know dont care why t = simulated time
 figure;
 subplot(2,1,1);
 plot(tsim_nested,r1, 'b', 'LineWidth', 1.5); hold on;
@@ -397,23 +398,40 @@ end
 %after introducting F we have: (non sensitive to y) 
 r_f = V_ry*H_yf;
 %okay so this is not the correct residual generator they are asking for.
+
 %earlier we had a very nice one "sys_y" which is sensitive to y. (should i
 %take the filtered one) ??? ) 
 
-%r_stochastic = sys_y*Y+sigma_meas*H
-% fuck matlab i have to redefine it
 
-%%%Q_xr = lyap(ss(sys_y),sigma_meas*ss(H)) %slide 18 week6 fuck it going
-%%%on.
+%%
+%sys_u_padded = [sys_u, zeros(2,1)];  % Adding an extra zero column
+H_ru_padded = [H_ru,zeros(2,1)]
+
+% Add the filtered transfer functions
+%sys = sys_y + sys_u_padded;
+systest = H_ry+H_ru_padded
+
+ss(sys)
+A1 = ss(systest).A;
+B1 =ss(systest).B
+C1 =ss(systest).C
+D1 =  ss(systest).D
+Qx = lyap(A1,B1*sigma_meas*B1')
+Qy = C1*Qx*C1'+D1*sigma_meas*D1'
+
+sigma_r1 = Qy(1,1)
+sigma_r2 = Qy(2,2)
 
 
+%%
 %GLR 
 M=20; %initial guess of window size
-sigma = 0.0093; %% need to check this !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+mu_0 = 0;
+sigma = sigma_r1;
+
 g = zeros(size(r1));     % Test statistics
 idx = ones(size(r1));    % Index of fault occurence sample estimation
 mu_1 = g;               % Estimated parameter
-mu_0 = 0; %supposed that H0 have mean 0
 for k = M:length(r1)     % For each new sample
     S = zeros(M,1);     % Define the log-likelihood ratio
     z = r1(k-M+1:k);     % Define the residual samples inside the window M
@@ -429,6 +447,8 @@ for k = M:length(r1)     % For each new sample
 end
 
 
+
+%%
 %GLR tuning 
 P_F=0.0001;
 P_M=0.01;
@@ -450,7 +470,29 @@ disp(P_F - pf_calc); %check error of vpa solve
 disp(h - chi2inv(1 - P_F,1)/2); % Compare with the other method
 
 %%
+%glr plot
+aa = subplot(2,1,1);
+plot(tsim_nested, r1, 'DisplayName', 'r1'); % Plot r1
+hold on;
+plot(tsim_nested, mu_1, 'DisplayName', 'mu_1'); % Plot mu_1
+hold off;
+grid on;
+ylabel('$r(t)$', 'Interpreter', 'latex'); % Use latex for labels
+legend('show'); % Display legend
 
+% Plotting the second subplot (GLR plot g and h)
+bb = subplot(2,1,2);
+plot(tsim_nested, g, 'DisplayName', 'g(t)'); % Plot GLR statistic
+hold on;
+plot(tsim_nested, ones(size(tsim_nested,1),1)*h, 'DisplayName', 'h'); % Plot h (ensure h is the same size as g)
+hold off;
+title('GLR PLOT');
+xlabel('$t$ in s', 'Interpreter', 'latex'); % Latex formatting
+ylabel('$g(t)$', 'Interpreter', 'latex'); % Latex formatting
+grid on;
+
+
+%%
 %finding window size slide 27 week 7
 mu_1 = 75; %% looked at r plot - we need to look into this !!!!!!!!!!!!!!!!!!!!!!!!!!!
 mu_0 = 0;
@@ -464,8 +506,6 @@ M = double(vpasolve(eq_2,gg1))
 %check
 %disp(P_D - pd_calc)
 %disp(P_d-ncx2cdf(2*h,1,lambda_1))
-
-
 
 f_m = [0;-0.025;0];     % Sensor fault vector (added to [y1;y2;y3])
                  

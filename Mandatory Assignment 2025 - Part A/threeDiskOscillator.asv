@@ -397,11 +397,34 @@ end
 %after introducting F we have: (non sensitive to y) 
 r_f = V_ry*H_yf;
 %okay so this is not the correct residual generator they are asking for.
+
 %earlier we had a very nice one "sys_y" which is sensitive to y. (should i
 %take the filtered one) ??? ) 
 
-%r_stochastic = sys_y*Y+sigma_meas*H
-% fuck matlab i have to redefine it
+
+%%
+sys_u_padded = [sys_u, zeros(2,1)];  % Adding an extra zero column
+H_ru_padded = [H_ru,zeros(2,1)]
+
+% Add the filtered transfer functions
+sys = sys_y + sys_u_padded;
+systest = H_ry+H_ru_padded
+
+ss(sys)
+A1 = ss(systest).A;
+B1 =ss(systest).B
+C1 =ss(systest).C
+D1 =  ss(systest).D
+Qx = lyap(A1,B1*sigma_meas*B1')
+Qy = C1*Qx*C1'+D1*sigma_meas*D1'
+
+sigma_r1 = Qy(1,1)
+sigma_r2 = Qy(2,2)
+
+
+%%
+
+var(r1)
 
 %%%Q_xr = lyap(ss(sys_y),sigma_meas*ss(H)) %slide 18 week6 fuck it going
 %%%on.
@@ -450,21 +473,19 @@ disp(P_F - pf_calc); %check error of vpa solve
 disp(h - chi2inv(1 - P_F,1)/2); % Compare with the other method
 
 %%
-
-%finding window size 
+%finding window size slide 27 week 7
 mu_1 = 75; %% looked at r plot - we need to look into this !!!!!!!!!!!!!!!!!!!!!!!!!!!
 mu_0 = 0;
 lambda_1 =(gg1*(mu_1-mu_0)^2)/sigma^2;
-pd_xx = (1/2) * (xx/lambda_1)^(-1/4) * exp(-(xx+lambda_1)/2)* besseli(-k, sqrt(lambda_1 * xx));
+bes = besseli(-1/2, sqrt(lambda_1 * xx));
+pd_xx = (1/2) * (xx/lambda_1)^(-1/4) * exp(-(xx+lambda_1)/2)*bes; 
 p_xx = int(pd_xx,xx,2*h,Inf)
-eq_2 = simplify(P_D-p_xx == 0)
+eq_2 = P_D-p_xx == 0
 M = double(vpasolve(eq_2,gg1))
 %pd_calc = double(int(pd_xx,xx,2*h,Inf)); %calculated probability of false alarm slide 24 lecture 7
 %check
 %disp(P_D - pd_calc)
 %disp(P_d-ncx2cdf(2*h,1,lambda_1))
-
-
 
 f_m = [0;-0.025;0];     % Sensor fault vector (added to [y1;y2;y3])
                  
