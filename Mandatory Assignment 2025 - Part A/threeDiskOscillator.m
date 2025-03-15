@@ -117,6 +117,8 @@ disp('Simplified a3 without y3:');
 disp(a3);
 subs(subs(a3,y_1,0),y_2,0);
 
+partfrac(subs(subs(a3,y_1,0),y_2,0))  
+partfrac(subs(subs(a3,y_2,0),y_1,0))
 
 
 J_1 = 0.0025; % kgm2 Bottom disk moment of inertia
@@ -265,7 +267,7 @@ H
 H_ry = [k_1/J_2 (-k_1-k_2-b_2*s)/J_2-s^2 k_2/J_2; ...
    0 k_2/J_3 (-k_2-b_3*s)/J_3-s^2;
    (k_1)/J_2 -((k_1*k_2+b_2*k_2*s+b_3*k_1*s+b_3*k_2*s+J_2*J_3*s^4+J_2*b_3*s^3+J_3*b_2*s^3+J_2*k_2*s^2+J_3*k_1*s^2+J_3*k_2*s^2+b_2*b_3*s^2))/(J_2*(J_3*s^2+b_3*s+k_2)) 0]
-H_ru = [0 tf(1); 0 0]
+H_ru = [0 tf(1); 0 0; 0 1/J_2]
 
 sys_y = H*H_ry
 sys_u = H*H_ru
