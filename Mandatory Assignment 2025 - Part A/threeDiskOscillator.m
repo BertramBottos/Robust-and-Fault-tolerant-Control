@@ -302,12 +302,13 @@ ECP_y_meas = y_meas; % Measured output
 %simIn = simIn.setExternalInput([ECP_t, ECP_u_1, ECP_u_2]); % Time + Inputs
 simTime = 50;                   % Simulation duration in seconds
 f_m_time = 8.5;                 % Sensor fault occurence time
-u_1 = [t u_1];
-u_2 = [t u_2];
-y_meas =[t y_meas]
+u_1_in = [t u_1];
+u_2_in = [t u_2];
+y_meas_in =[t y_meas];
 simout = sim("threeDiskOscillatorRig_v2");
 r1 = simout.r.signals.values(:,1); 
 r2 = simout.r.signals.values(:,2);
+r3 = simout.r.signals.values(:,3);
 
 
 %%
@@ -317,10 +318,11 @@ tsim_nested = simout.r.time; %dont know dont care why t = simulated time
 figure;
 subplot(2,1,1);
 plot(tsim_nested,r1, 'b', 'LineWidth', 1.5); hold on;
-plot(tsim_nested,r2, 'r', 'LineWidth', 1.5);
+plot(tsim_nested,r2, 'r', 'LineWidth', 1.5); hold on; 
+plot(tsim_nested,r3, 'r', 'LineWidth', 1.5,'Color',"g");
 xlabel('Time (s)');
 ylabel('residual magnitude');
-legend('r_1', 'r_2');
+legend('r_1', 'r_2','r3');
 title('residuals vs Time');
 grid on;
 
@@ -410,10 +412,8 @@ r_f = V_ry*H_yf;
 %earlier we had a very nice one "sys_y" which is sensitive to y. (should i
 %take the filtered one) ??? ) 
 
-
-%%
 %sys_u_padded = [sys_u, zeros(2,1)];  % Adding an extra zero column
-H_ru_padded = [H_ru,zeros(2,1)]
+H_ru_padded = [H_ru,zeros(3,1)]
 
 % Add the filtered transfer functions
 %sys = sys_y + sys_u_padded;
@@ -424,39 +424,21 @@ A1 = ss(systest).A;
 B1 =ss(systest).B
 C1 =ss(systest).C
 D1 =  ss(systest).D
-Qx = lyap(A1,B1*sigma_meas*B1')
-Qy = C1*Qx*C1'+D1*sigma_meas*D1'
+Qx = lyap(A1,B1*sigma_meas*B1');
+Qy = C1*Qx*C1'+D1*sigma_meas*D1';
 
 sigma_r1 = Qy(1,1)
 sigma_r2 = Qy(2,2)
 
 
-%%
 %GLR 
 M=20; %initial guess of window size
 mu_0 = 0;
-sigma = sigma_r1;
-
-g = zeros(size(r1));     % Test statistics
-idx = ones(size(r1));    % Index of fault occurence sample estimation
-mu_1 = g;               % Estimated parameter
-for k = M:length(r1)     % For each new sample
-    S = zeros(M,1);     % Define the log-likelihood ratio
-    z = r1(k-M+1:k);     % Define the residual samples inside the window M
-    for j = 1:M         % Iterate for all the time instants of the window
-        sum_sq = 0;
-        for i = j:M
-            sum_sq = sum_sq + (z(i) - mu_0);
-        end
-        S(j) = sum_sq^2/((M - j + 1)*2*sigma^2);
-    end
-    [g(k), idx(k)] = max(S); % Get the value of g(k) and the sample index
-    mu_1(k) = sum(r1(k-M+idx(k)+1:k))/(M - idx(k) + 1);
-end
+sigma = sqrt(var(r1));
+[g,mu_1,idx] = GLR(r1,M,mu_0,sigma)
 
 
 
-%%
 %GLR tuning 
 P_F=0.0001;
 P_M=0.01;
@@ -476,15 +458,18 @@ pf_calc = double(int(pd_zz,zz,2*h,Inf)); %calculated probability of false alarm 
 % check
 disp(P_F - pf_calc); %check error of vpa solve
 disp(h - chi2inv(1 - P_F,1)/2); % Compare with the other method
+%h = chi2inv(1 - P_F,1)/2;
+fault = (g>h)*40;
 
-%%
 %glr plot
+figure;
 aa = subplot(2,1,1);
 plot(tsim_nested, r1, 'DisplayName', 'r1'); % Plot r1
 hold on;
 plot(tsim_nested, mu_1, 'DisplayName', 'mu_1'); % Plot mu_1
 hold off;
 grid on;
+title("r1 with mean")
 ylabel('$r(t)$', 'Interpreter', 'latex'); % Use latex for labels
 legend('show'); % Display legend
 
@@ -493,10 +478,13 @@ bb = subplot(2,1,2);
 plot(tsim_nested, g, 'DisplayName', 'g(t)'); % Plot GLR statistic
 hold on;
 plot(tsim_nested, ones(size(tsim_nested,1),1)*h, 'DisplayName', 'h'); % Plot h (ensure h is the same size as g)
+hold on; 
+plot(tsim_nested,fault,'DisplayName','fault')
 hold off;
 title('GLR PLOT');
 xlabel('$t$ in s', 'Interpreter', 'latex'); % Latex formatting
 ylabel('$g(t)$', 'Interpreter', 'latex'); % Latex formatting
+legend('show'); % Display legend
 grid on;
 
 
