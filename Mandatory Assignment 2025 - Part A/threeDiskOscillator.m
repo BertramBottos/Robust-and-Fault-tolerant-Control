@@ -219,6 +219,11 @@ F_y = [ 1 0 0 0 0
         0 1 0 0 0
         0 0 1 0 0 ];
 %% This is the one we run with
+%Plot settings
+set(0,'DefaultTextInterpreter','latex');
+set(0,'DefaultAxesFontSize',20);
+set(0,'DefaultLineLineWidth', 2);
+
 wn = 15;  % Cutoff frequency (rad/s), chosen below the system's resonant frequencies
 zeta = 0.707;  % Damping ratio (Butterworth design)
 
@@ -503,8 +508,7 @@ F_aug = [F_d G_d(:,1);zeros(1,6) 1];
 G_aug = [G_d;0 0];
 C_aug = [C zeros(3,1)];
 % Kalman gain
-sigma_meas = (0.0093^2)*eye(3);     % Measurements covariance matrix
-L_aug = dlqe(F_aug, eye(7), C_aug, 1e-3 * eye(7), sigma_meas(1,1) * eye(3));
+L_aug = dlqe(F_aug,eye(7),C_aug,1e-3*eye(7),sigma_meas(1,1).^2*eye(3));
 L_o = L_aug(1:6,:);
 L_d = L_aug(7,:);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -529,17 +533,40 @@ u_fault = 0;                    % Disable VA meachanism
 f_m = [0;0;0];     % Sensor fault vector (added to [y1;y2;y3])
 f_m_time = 8.5;                 % Sensor fault occurence time
 testout = sim('threeDiskOscillatorRig_v4');
-
 %%
-plot(testout.y_real.Data)
-%% Simulation for actuator fault (f_m = 0)
-f_u = [0;-0.1];                 % Actuator fault vector (added to [u1;u2])
-u_fault = 1;                    % Enable VA meachanism
-f_m = [0;0;0];                  % Sensor fault vector (added to [y1;y2;y3])
-sim('threeDiskOscillatorRig');
+r1 = testout.r1.signals.values(:,1);
+r2 = testout.r1.signals.values(:,2);
+r3 = testout.r1.signals.values(:,3);
 
-%% Plot settings
-set(0,'DefaultTextInterpreter','latex');
-set(0,'DefaultAxesFontSize',20);
-set(0,'DefaultLineLineWidth', 2);
+ %Time Vector (if available)
+t = testout.r1.time;  % Assuming all signals share the same time vector
+
+%Plot
+figure;
+plot(t, r2, 'r', 'LineWidth', 1.5); hold on;
+plot(t, r2, 'g', 'LineWidth', 1.5);
+plot(t, r3, 'b', 'LineWidth', 1.5);
+hold off;
+
+%Formatting
+xlabel('Time (s)');
+ylabel('Signal Value');
+title('Response Signals');
+legend('r1', 'r2', 'r3');
+grid on;
+
+
+
+%% Simulation for sensor fault (f_u = 0)
+x_0 = [0;0;0;0;0;0];            % Initial conditions
+simTime = 45;                   % Simulation duration in seconds
+f_u_time = 25;                  % Actuator fault occurence time
+detect_time = f_u_time + 3.75;
+f_u = [0;-0.1];                 % Actuator fault vector (added to [u1;u2])
+u_fault = 0;                    % enable/disable VA meachanism (0 = disable) 
+f_m = [0;0;0];     % Sensor fault vector (added to [y1;y2;y3])
+f_m_time = 8.5;                 % Sensor fault occurence time
+sim_fault = sim('threeDiskOscillatorRig_v4');
+
+y_wfault = sim_fault.y_real.signals.values
 
