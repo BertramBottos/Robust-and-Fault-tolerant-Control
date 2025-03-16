@@ -99,9 +99,9 @@ a2 = (k_2*(y_2 - y_3) - b_3*y_3*s)/J_3 - y_3*s^2;
 
 syms lambda
 
-a1-lambda*a2
+a1-lambda*a2;
 % Define lambda
-solve(0==k_2/J_2+(lambda*k_2)/J_3+(lambda*b_3*s)/J_3-lambda*s^(2),lambda)
+solve(0==k_2/J_2+(lambda*k_2)/J_3+(lambda*b_3*s)/J_3-lambda*s^(2),lambda);
 lambda = - (J_3*k_2) / (J_2*J_3*s^2 - J_2*b_3*s + J_2*k_2);
 
 % Compute a3 = a1 - lambda * a2
@@ -112,13 +112,13 @@ y3_expr = solve(a2, y_3);
 
 % Substitute y3 into a3 to eliminate it
 a3_no_y3 = simplify(subs(a3, y_3, y3_expr));
-a3 = a3_no_y3
+a3 = a3_no_y3;
 disp('Simplified a3 without y3:');
 disp(a3);
 subs(subs(a3,y_1,0),y_2,0);
 
-partfrac(subs(subs(a3,y_1,0),y_2,0))  
-partfrac(subs(subs(a3,y_2,0),y_1,0))
+partfrac(subs(subs(a3,y_1,0),y_2,0));  
+partfrac(subs(subs(a3,y_2,0),y_1,0));
 
 
 J_1 = 0.0025; % kgm2 Bottom disk moment of inertia
@@ -243,6 +243,7 @@ H_ru_padded = [H_ru,zeros(3,1)];
 
 sys_y = H*H_ry;
 sys_u = H*H_ru_padded;
+sys_u_normal = H*H_ru; %need thsi for running our simulink model 
 
 sys = sys_y+sys_u
 T_s = 4e-3; % Sampling period (4 ms)
@@ -373,7 +374,7 @@ end
 end
 
 %% Opgave 5 
-[J_1, J_2, J_3, k_1, k_2, b_1, b_2, b_3, T_Cp, T_Cm] = InputValues()
+[J_1, J_2, J_3, k_1, k_2, b_1, b_2, b_3, T_Cp, T_Cm] = InputValues();
 sigma_meas = (0.0093^2)*eye(3);     % Measurements covariance matrix
 %r1_sym = V_ry(1,:);
 %r2_sym = V_ry(2,:);
@@ -386,29 +387,29 @@ r_f = V_ry*H_yf;
 %take the filtered one) ??? ) 
 
 %sys_u_padded = [sys_u, zeros(2,1)];  % Adding an extra zero column
-H_ru_padded = [H_ru,zeros(3,1)]
+H_ru_padded = [H_ru,zeros(3,1)];
 
 % Add the filtered transfer functions
 %sys = sys_y + sys_u_padded;
-systest = H_ry+H_ru_padded
+systest = H_ry+H_ru_padded;
 
-ss(sys)
+ss(sys);
 A1 = ss(systest).A;
-B1 =ss(systest).B
-C1 =ss(systest).C
-D1 =  ss(systest).D
+B1 =ss(systest).B;
+C1 =ss(systest).C;
+D1 =  ss(systest).D;
 Qx = lyap(A1,B1*sigma_meas*B1');
 Qy = C1*Qx*C1'+D1*sigma_meas*D1';
 
-sigma_r1 = Qy(1,1)
-sigma_r2 = Qy(2,2)
+sigma_r1 = Qy(1,1);
+sigma_r2 = Qy(2,2);
 
 
 %GLR 
-M=20; %initial guess of window size
+M_window=20; %initial guess of window size
 mu_0 = 0;
 sigma = sqrt(var(r1));
-[g,mu_1,idx] = GLR(r1,M,mu_0,sigma)
+[g,mu_1,idx] = GLR(r1,M_window,mu_0,sigma);
 
 
 
@@ -417,7 +418,7 @@ P_F=0.0001;
 P_M=0.01;
 %P_M = probability of missed detection 
 %P_D = probabilty of detection (im not sure if its the same). 
-P_D=1-P_M
+P_D=1-P_M;
 %finding threshold h
 k = 1/2;
 theta = 2;
@@ -513,15 +514,8 @@ L_d = L_aug(7,:);
 
 
 %% Virtual actuator
-% Failure in actuator 2
-% Do the desing first in continuous time
-va_eig_d = [];  % Discrete time eigenvalues
-va_eig = log(va_eig_d)/T_s;     % Continuous time eigenvalues
-% Then discretise your VA
-
 B_change = [1 0;0 0];
-
-%% Simulation for sensor fault (f_u = 0)
+% Simulation for no actuator or sensor fault (f_u = 0, fm=u =0)
 x_0 = [0;0;0;0;0;0];            % Initial conditions
 simTime = 45;                   % Simulation duration in seconds
 f_u_time = 25;                  % Actuator fault occurence time
@@ -531,10 +525,14 @@ u_fault = 0;                    % Disable VA meachanism
 f_m = [0;0;0];     % Sensor fault vector (added to [y1;y2;y3])
 f_m_time = 8.5;                 % Sensor fault occurence time
 testout = sim('threeDiskOscillatorRig_v4');
-%%
+
 r1 = testout.r1.signals.values(:,1);
 r2 = testout.r1.signals.values(:,2);
 r3 = testout.r1.signals.values(:,3);
+y1_nofault = testout.y_real.Data(:,1);
+y2_nofault = testout.y_real.Data(:,2);
+y3_nofault = testout.y_real.Data(:,3);
+
 
  %Time Vector (if available)
 t = testout.r1.time;  % Assuming all signals share the same time vector
@@ -555,16 +553,101 @@ grid on;
 
 
 
-%% Simulation for sensor fault (f_u = 0)
+%% Simulation for actuator fault fault (f_u = -0.1) no sensor fault
 x_0 = [0;0;0;0;0;0];            % Initial conditions
 simTime = 45;                   % Simulation duration in seconds
 f_u_time = 25;                  % Actuator fault occurence time
 detect_time = f_u_time + 3.75;
-f_u = [0;-0.1];                 % Actuator fault vector (added to [u1;u2])
+f_u = [0;-0.35];                 % Actuator fault vector (added to [u1;u2])
 u_fault = 0;                    % enable/disable VA meachanism (0 = disable) 
 f_m = [0;0;0];     % Sensor fault vector (added to [y1;y2;y3])
 f_m_time = 8.5;                 % Sensor fault occurence time
 sim_fault = sim('threeDiskOscillatorRig_v4');
 
-y_wfault = sim_fault.y_real.signals.values
+y1_wfault = sim_fault.y_real.Data(:,1);
+y2_wfault = sim_fault.y_real.Data(:,2);
+y3_wfault = sim_fault.y_real.Data(:,3);
+
+ %Plot
+figure;
+plot(t, y1_wfault, 'r', 'LineWidth', 1.5); hold on;
+plot(t, y2_wfault, 'g', 'LineWidth', 1.5);
+plot(t, y3_wfault, 'b', 'LineWidth', 1.5);
+plot(t, y1_nofault, 'r--', 'LineWidth', 1.5);  % Dashed line for nofault
+plot(t, y2_nofault, 'g--', 'LineWidth', 1.5);  % Dashed line for nofault
+plot(t, y3_nofault, 'b--', 'LineWidth', 1.5);  % Dashed line for nofault
+hold off;
+
+ %Formatting
+xlabel('Time (s)');
+ylabel('Signal Value');
+title('Fault vs No Fault Response Signals');
+legend('y1_{wfault}', 'y2_{wfault}', 'y3_{wfault}', 'y1_{nofault}', 'y2_{nofault}', 'y3_{nofault}');
+grid on;
+
+y1_diff = y1_wfault - y1_nofault;
+y2_diff = y2_wfault - y2_nofault;
+y3_diff = y3_wfault - y3_nofault;
+
+figure;
+plot(t, y1_diff, 'r', 'LineWidth', 1.5); hold on;
+plot(t, y2_diff, 'g', 'LineWidth', 1.5);
+plot(t, y3_diff, 'b', 'LineWidth', 1.5);
+hold off;
+
+xlabel('Time (s)');
+ylabel('Difference in Signal Value');
+title('Difference between Fault and No Fault Signals');
+legend('y1_{fault difference}', 'y2_{fault difference}', 'y3_{fault difference}');
+grid on;
+
+%% Virtual actuator design
+Mc = ctrb(F_d,G_d);
+
+if (rank(Mc) == size(F_d,2))
+    disp('System is controllable');
+else
+    disp('System is not controllable');
+end
+
+B_f = [B(:,1) zeros(size(B(:,2)))];
+G_f = [G_d(:,1) zeros(size(G_d(:,2)))];
+if (rank(B_f) == rank([B B_f]))
+    disp('Perfect static matching for actuator fault');
+else
+    disp('Imperfect static matching for actuator fault');
+end
+
+if (rank(ctrb(A,B_f)) == size(A,2))
+    disp('Faulty system is controllable');
+else
+    disp('Faulty system is not controllable');
+end
+
+% Continuous time
+va_eig = log(eig(F_d - G_d*K_c))/T_s;
+M = place(A, B_f, va_eig);
+A_D = A - B_f*M;
+N_D = pinv(B_f)*B;
+B_D = B - B_f*N_D;
+C_D = C;
+
+% Discrete time
+va_eig_d = exp(va_eig*T_s);
+M_d = place(F_d, G_f, va_eig_d);
+F_D = F_d - G_f*M_d;
+N_D_d = pinv(G_f)*G_d;
+G_D = G_d - G_f*N_D_d;
+C_D = C;
+%% Simulation for actuator fault fault (f_u = -0.1) no sensor fault
+x_0 = [0;0;0;0;0;0];            % Initial conditions
+simTime = 45;                   % Simulation duration in seconds
+f_u_time = 25;                  % Actuator fault occurence time
+detect_time = f_u_time + 3.75;
+f_u = [0;-0.35];                 % Actuator fault vector (added to [u1;u2])
+u_fault = 1;                    % enable/disable VA meachanism (0 = disable) 
+f_m = [0;0;0];     % Sensor fault vector (added to [y1;y2;y3])
+f_m_time = 8.5;                 % Sensor fault occurence time
+sim_fault = sim('threeDiskOscillatorRig');
+
 
