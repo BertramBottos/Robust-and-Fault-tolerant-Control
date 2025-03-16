@@ -513,7 +513,7 @@ L_d = L_aug(7,:);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%% Virtual actuator
+%% Virtual actuator simulation 
 B_change = [1 0;0 0];
 % Simulation for no actuator or sensor fault (f_u = 0, fm=u =0)
 x_0 = [0;0;0;0;0;0];            % Initial conditions
@@ -543,17 +543,15 @@ plot(t, r2, 'r', 'LineWidth', 1.5); hold on;
 plot(t, r2, 'g', 'LineWidth', 1.5);
 plot(t, r3, 'b', 'LineWidth', 1.5);
 hold off;
-
-%Formatting
 xlabel('Time (s)');
 ylabel('Signal Value');
-title('Response Signals');
+title('Reidual Signals no fault present');
 legend('r1', 'r2', 'r3');
 grid on;
 
 
 
-%% Simulation for actuator fault fault (f_u = -0.1) no sensor fault
+% Simulation for actuator fault fault (f_u = -0.1) no sensor fault
 x_0 = [0;0;0;0;0;0];            % Initial conditions
 simTime = 45;                   % Simulation duration in seconds
 f_u_time = 25;                  % Actuator fault occurence time
@@ -578,7 +576,6 @@ plot(t, y2_nofault, 'g--', 'LineWidth', 1.5);  % Dashed line for nofault
 plot(t, y3_nofault, 'b--', 'LineWidth', 1.5);  % Dashed line for nofault
 hold off;
 
- %Formatting
 xlabel('Time (s)');
 ylabel('Signal Value');
 title('Fault vs No Fault Response Signals');
@@ -601,7 +598,7 @@ title('Difference between Fault and No Fault Signals');
 legend('y1_{fault difference}', 'y2_{fault difference}', 'y3_{fault difference}');
 grid on;
 
-%% Virtual actuator design
+% Virtual actuator design
 Mc = ctrb(F_d,G_d);
 
 if (rank(Mc) == size(F_d,2))
@@ -639,7 +636,7 @@ F_D = F_d - G_f*M_d;
 N_D_d = pinv(G_f)*G_d;
 G_D = G_d - G_f*N_D_d;
 C_D = C;
-%% Simulation for actuator fault fault (f_u = -0.1) no sensor fault
+% Simulation for actuator fault fault (f_u = -0.1) no sensor fault
 x_0 = [0;0;0;0;0;0];            % Initial conditions
 simTime = 45;                   % Simulation duration in seconds
 f_u_time = 25;                  % Actuator fault occurence time
