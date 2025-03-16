@@ -229,7 +229,7 @@ zeta = 0.707;  % Damping ratio (Butterworth design)
 
 % Define second-order low-pass filter
 s = tf('s');
-H = (wn^2) / (s^2 + 2*zeta*wn*s + wn^2);
+H = (wn^2) / (s^2 + 2*zeta*wn*s + wn^2)* (wn^2) / (s^2 + 2*zeta*wn*s + wn^2);
 % Display the transfer function
 disp('Adjusted Second-Order Low-Pass Filter Transfer Function:');
 H
