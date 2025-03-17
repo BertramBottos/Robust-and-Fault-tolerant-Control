@@ -255,7 +255,7 @@ disp(dsys);
 
 figure;
 step(dsys);
-title('Step Response of Discretized Residual System');
+title('Step Response of Discretized System');
 xlabel('Time (seconds)');
 ylabel('Response');
 grid on;
@@ -391,18 +391,27 @@ H_ru_padded = [H_ru,zeros(3,1)];
 
 % Add the filtered transfer functions
 %sys = sys_y + sys_u_padded;
-systest = H_ry+H_ru_padded;
+sys_y_2 = H_ry;
+sys_u_2 = H_ru_padded;
+%sys_u_normal = H*H_ru; %need thsi for running our simulink model 
 
-ss(sys);
-A1 = ss(systest).A;
-B1 =ss(systest).B;
+sys_2 = sys_y_2+sys_u_2
+T_s = 4e-3; % Sampling period (4 ms)
+%dsys_2 = c2d(dsys,T_s, 'zoh')
+
+systest = H_ry+H_ru_padded;
+systest = dsys
+
+
+F1 = ss(systest).A;
+G1 =ss(systest).B;
 C1 =ss(systest).C;
 D1 =  ss(systest).D;
-Qx = lyap(A1,B1*sigma_meas*B1');
+Qx = dlyap(F1,G1*sigma_meas*G1');
 Qy = C1*Qx*C1'+D1*sigma_meas*D1';
 
-sigma_r1 = Qy(1,1);
-sigma_r2 = Qy(2,2);
+sigma_r1 = sqrt(Qy(1,1));
+sigma_r2 = sqrt(Qy(2,2));
 
 
 %GLR 
@@ -466,7 +475,7 @@ grid on;
 %finding window size slide 27 week 7
 %%mu_1 = 75; %% looked at r plot - we need to look into this !!!!!!!!!!!!!!!!!!!!!!!!!!!
 %%mu_0 = 0;
-%%lambda_1 =(gg1*(mu_1-mu_0)^2)/sigma^2;
+%lambda_1 =(gg1*(mu_1-mu_0)^2)/sigma^2;
 %bes = besseli(-1/2, sqrt(lambda_1 * xx));
 %pd_xx = (1/2) * (xx/lambda_1)^(-1/4) * exp(-(xx+lambda_1)/2)*bes; 
 %p_xx = int(pd_xx,xx,2*h,Inf)
