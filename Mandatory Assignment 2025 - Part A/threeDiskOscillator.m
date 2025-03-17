@@ -412,6 +412,7 @@ Qy = C1*Qx*C1'+D1*sigma_meas*D1';
 
 sigma_r1 = sqrt(Qy(1,1));
 sigma_r2 = sqrt(Qy(2,2));
+sigma_r3 = sqrt(Qy(3,3));
 
 
 %GLR 
