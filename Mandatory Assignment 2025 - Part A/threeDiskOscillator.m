@@ -366,9 +366,9 @@ for j=1:size(H_yf,2)
 
  %checking if fault is strongly detetible on any residual
 if (strong_detectability(1) ~= 0) || (strong_detectability(2) ~= 0)
-    fprintf("Fault %d is strongly detectable\n", i);
+    fprintf("Fault %d is strongly detectable\n", j);
 else
-    fprintf("Fault %d is NOT strongly detectable\n", i);
+    fprintf("Fault %d is NOT strongly detectable\n", j);
 end
 
 end
