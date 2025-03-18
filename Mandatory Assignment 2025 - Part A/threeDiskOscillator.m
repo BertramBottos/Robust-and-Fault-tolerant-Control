@@ -229,7 +229,8 @@ zeta = 0.707;  % Damping ratio (Butterworth design)
 
 % Define second-order low-pass filter
 s = tf('s');
-H = (wn^2) / (s^2 + 2*zeta*wn*s + wn^2)* (wn^2) / (s^2 + 2*zeta*wn*s + wn^2);
+%H = (wn^2) / (s^2 + 2*zeta*wn*s + wn^2)* (wn^2) / (s^2 + 2*zeta*wn*s + wn^2);
+H = 1 / (s^2 + 2*zeta*wn*s + wn^2)* (wn^2) / (s^2 + 2*zeta*wn*s + wn^2)
 % Display the transfer function
 disp('Adjusted Second-Order Low-Pass Filter Transfer Function:');
 H
@@ -424,7 +425,6 @@ sys_u_2 = H_ru_padded;
 sys_2 = sys_y_2+sys_u_2
 T_s = 4e-3; % Sampling period (4 ms)
 %dsys_2 = c2d(dsys,T_s, 'zoh')
-
 systest = H_ry+H_ru_padded;
 %systest = dsys
 
@@ -438,14 +438,15 @@ Qy = C1*Qx*C1'+D1*sigma_meas*D1';
 
 %sigma_r1 = sqrt(Qy(1,1));
 sigma_r2 = sqrt(Qy);
+var_diff_precent = ((var(r2)-Qy)/var(r2))*100
 %sigma_r3 = sqrt(Qy(3,3));
 
 
 %GLR 
 M_window=20; %initial guess of window size
 mu_0 = 0;
-sigma = sqrt(var(r1));
-[g,mu_1,idx] = GLR(r1,M_window,mu_0,sigma);
+%sigma = sqrt(var(r2)); %residuals from the given data. 
+[g,mu_1,idx] = GLR(r2,M_window,mu_0,sigma_r2);
 
 
 
@@ -469,12 +470,12 @@ pf_calc = double(int(pd_zz,zz,2*h,Inf)); %calculated probability of false alarm 
 disp(P_F - pf_calc); %check error of vpa solve
 disp(h - chi2inv(1 - P_F,1)/2); % Compare with the other method
 %h = chi2inv(1 - P_F,1)/2;
-fault = (g>h)*40;
+fault = (g>h)*400;
 
 %glr plot
 figure;
 aa = subplot(2,1,1);
-plot(tsim_nested, r1, 'DisplayName', 'r1'); % Plot r1
+plot(tsim_nested, r2, 'DisplayName', 'r1'); % Plot r1
 hold on;
 plot(tsim_nested, mu_1, 'DisplayName', 'mu_1'); % Plot mu_1
 hold off;
@@ -498,6 +499,76 @@ legend('show'); % Display legend
 grid on;
 saveas(gcf, fullfile('fig', 'GLR_theory.png'));
 
+%finding window size
+mu_1_ex = mu_1(10000,1); % when fault have occured
+M= 1:70;
+lambda_1 = (M * (mu_1_ex - mu_0)^2) / (var(r2));
+PD_calc = 1 - ncx2cdf(2*h, 1, lambda_1);
+M_window = find(PD_calc > P_D, 1);
+%% GLR simulation Question 5.3) 
+B_change = [1 0;0 0];
+% Simulation for no actuator or sensor fault (f_u = 0, fm=u =0)
+x_0 = [0;0;0;0;0;0];            % Initial conditions
+simTime = 45;                   % Simulation duration in seconds
+f_u_time = 25;                  % Actuator fault occurence time
+f_u = [0;0];                    % Actuator fault vector (added to [u1;u2])
+u_fault = 0;                    % Disable VA meachanism
+f_m = [0;0;0];     % Sensor fault vector (added to [y1;y2;y3])
+f_m_time = 8.5;                 % Sensor fault occurence time
+r_in0 = [zeros(2000,1); -25*ones(size(r2,1)-2000,1)];
+r_in = [tsim_nested r_in0];
+glr_sim = sim('threeDiskOscillatorRig_v3_1');
+
+figure
+subplot(2,1,1);  % First subplot in a 2x1 grid
+plot(glr_sim.GLR.Data, 'b');  % Plot GLR data in blue
+hold on;  % Hold the plot to add another plot
+yline(h, 'r--', 'LineWidth', 2);  % Add a horizontal line at y = h (red dashed line)
+xlabel('Index');
+ylabel('GLR Data');
+title('GLR Data with threshold h');
+grid on;
+
+% Second subplot: Plot the signal r_in
+subplot(2,1,2);  % Second subplot in a 2x1 grid
+plot(r_in(:,2), 'g');  % Plot r_in in green
+xlabel('Index');
+ylabel('r_{in}');
+title('residual input');
+grid on;
+saveas(gcf, fullfile('fig', 'GLR_sim.png'));
+
+%% GLR implementation question 6 
+B_change = [1 0;0 0];
+% Simulation for no actuator or sensor fault (f_u = 0, fm=u =0)
+x_0 = [0;0;0;0;0;0];            % Initial conditions
+simTime = 45;                   % Simulation duration in seconds
+f_u_time = 25;                  % Actuator fault occurence time
+f_u = [0;0];                    % Actuator fault vector (added to [u1;u2])
+u_fault = 0;                    % Disable VA meachanism
+f_m = [0;0;0];     % Sensor fault vector (added to [y1;y2;y3])
+f_m_time = 8.5;                 % Sensor fault occurence time
+glr_imp = sim('threeDiskOscillatorRig_v3');
+r2 = glr_imp.r.signals.values(:,2);
+
+figure
+subplot(2,1,1);  % First subplot in a 2x1 grid
+plot(glr_imp.GLR.Data, 'b');  % Plot GLR data in blue
+hold on;  % Hold the plot to add another plot
+yline(h, 'r--', 'LineWidth', 2);  % Add a horizontal line at y = h (red dashed line)
+xlabel('Index');
+ylabel('GLR Data');
+title('GLR Data with threshold h');
+grid on;
+
+% Second subplot: Plot the signal r_in
+subplot(2,1,2);  % Second subplot in a 2x1 grid
+plot(r2, 'g');  % Plot r_in in green
+xlabel('Index');
+ylabel('r2');
+title('residual input');
+grid on;
+saveas(gcf, fullfile('fig', 'GLR_implementation.png'));
 
 %%
 %finding window size slide 27 week 7
@@ -550,7 +621,7 @@ L_d = L_aug(7,:);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%% Virtual actuator simulation 
+%% LQR simulation
 B_change = [1 0;0 0];
 % Simulation for no actuator or sensor fault (f_u = 0, fm=u =0)
 x_0 = [0;0;0;0;0;0];            % Initial conditions
@@ -576,7 +647,7 @@ t = testout.r1.time;  % Assuming all signals share the same time vector
 
 %Plot
 figure;
-plot(t, r2, 'r', 'LineWidth', 1.5); hold on;
+plot(t, r1, 'r', 'LineWidth', 1.5); hold on;
 plot(t, r2, 'g', 'LineWidth', 1.5);
 plot(t, r3, 'b', 'LineWidth', 1.5);
 hold off;
@@ -585,8 +656,6 @@ ylabel('Signal Value');
 title('Reidual Signals no fault present');
 legend('r1', 'r2', 'r3');
 grid on;
-
-
 
 % Simulation for actuator fault fault (f_u = -0.1) no sensor fault
 x_0 = [0;0;0;0;0;0];            % Initial conditions
@@ -603,7 +672,20 @@ y1_wfault = sim_fault.y_real.Data(:,1);
 y2_wfault = sim_fault.y_real.Data(:,2);
 y3_wfault = sim_fault.y_real.Data(:,3);
 
- %Plot
+
+%Plot
+figure;
+plot(t, y1_nofault, 'r--', 'LineWidth', 1.5);  hold on;
+plot(t, y2_nofault, 'g--', 'LineWidth', 1.5); 
+plot(t, y3_nofault, 'b--', 'LineWidth', 1.5);  
+hold off;
+xlabel('Time (s)');
+ylabel('Signal Value');
+title('Output response wiht no fault');
+legend('y1_{nofault}', 'y2_{nofault}', 'y3_{nofault}');
+grid on;
+ saveas(gcf, fullfile('fig', 'LQR_nofault.png'));
+
 figure;
 plot(t, y1_wfault, 'r', 'LineWidth', 1.5); hold on;
 plot(t, y2_wfault, 'g', 'LineWidth', 1.5);
@@ -612,12 +694,14 @@ plot(t, y1_nofault, 'r--', 'LineWidth', 1.5);  % Dashed line for nofault
 plot(t, y2_nofault, 'g--', 'LineWidth', 1.5);  % Dashed line for nofault
 plot(t, y3_nofault, 'b--', 'LineWidth', 1.5);  % Dashed line for nofault
 hold off;
-
 xlabel('Time (s)');
 ylabel('Signal Value');
 title('Fault vs No Fault Response Signals');
 legend('y1_{wfault}', 'y2_{wfault}', 'y3_{wfault}', 'y1_{nofault}', 'y2_{nofault}', 'y3_{nofault}');
 grid on;
+saveas(gcf, fullfile('fig', 'LQR_fault.png'));
+
+
 
 y1_diff = y1_wfault - y1_nofault;
 y2_diff = y2_wfault - y2_nofault;
@@ -635,7 +719,7 @@ title('Difference between Fault and No Fault Signals');
 legend('y1_{fault difference}', 'y2_{fault difference}', 'y3_{fault difference}');
 grid on;
 
-% Virtual actuator design
+%% Virtual actuator design
 Mc = ctrb(F_d,G_d);
 
 if (rank(Mc) == size(F_d,2))
@@ -682,6 +766,42 @@ f_u = [0;-0.35];                 % Actuator fault vector (added to [u1;u2])
 u_fault = 1;                    % enable/disable VA meachanism (0 = disable) 
 f_m = [0;0;0];     % Sensor fault vector (added to [y1;y2;y3])
 f_m_time = 8.5;                 % Sensor fault occurence time
-sim_fault = sim('threeDiskOscillatorRig');
+%%
+sim_done = sim('threeDiskOscillatorRig')
+ymeas = sim_done.y_meas.Data;
+theta_ref = sim_done.theta_ref.Data;
+
+r = sim_done.r.Data;
+time = sim_done.r.Time; % Adjust according to your time step if available
+
+% Plot ymeas and theta_ref on the same plot
+figure;
+
+% Plot ymeas (3D) and theta_ref (1D) on the same figure
+subplot(2, 1, 1); % Two plots: one for ymeas and theta_ref, the other for r
+hold on;
+plot(time, ymeas(:, 1), 'r', 'DisplayName', 'y1 meas ');
+plot(time, ymeas(:, 2), 'g', 'DisplayName', 'y2 meas ');
+plot(time, ymeas(:, 3), 'b', 'DisplayName', 'y3 meas ');
+plot(time, theta_ref, 'k', 'LineWidth', 1.5, 'DisplayName', 'theta ref');
+xline(detect_time, '--m', 'LineWidth', 1.5, 'DisplayName', 'detect\_time');  % vertical line
+xlabel('Time');
+ylabel('Values');
+legend('show');
+title('measured output y and theta_ref');
+
+% Plot r in a separate plot
+
+subplot(2, 1, 2);
+hold on
+plot(time, r(:, 1), 'b', 'LineWidth', 1.5, 'DisplayName', 'r1 ');
+plot(time, r(:, 2), 'c', 'LineWidth', 1.5, 'DisplayName', 'r2 ');
+plot(time, r(:, 3), 'r', 'LineWidth', 1.5, 'DisplayName', 'r3 ');
+xline(detect_time, '--m', 'LineWidth', 1.5, 'DisplayName', 'detect\_time');  % vertical line
+xlabel('Time');
+ylabel('r');
+legend('r1','r2','r3','detect\_time');
+title('Plot of r');
+saveas(gcf, fullfile('fig', 'Virtual_Actuator.png'));
 
 
