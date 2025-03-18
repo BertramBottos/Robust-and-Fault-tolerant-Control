@@ -634,6 +634,7 @@ f_m = [0;0;0];     % Sensor fault vector (added to [y1;y2;y3])
 f_m_time = 8.5;                 % Sensor fault occurence time
 testout = sim('threeDiskOscillatorRig_v4');
 
+theta_ref = testout.theta_ref.signals.values;
 r1 = testout.r1.signals.values(:,1);
 r2 = testout.r1.signals.values(:,2);
 r3 = testout.r1.signals.values(:,3);
@@ -675,30 +676,35 @@ y3_wfault = sim_fault.y_real.Data(:,3);
 
 %Plot
 figure;
-plot(t, y1_nofault, 'r--', 'LineWidth', 1.5);  hold on;
-plot(t, y2_nofault, 'g--', 'LineWidth', 1.5); 
-plot(t, y3_nofault, 'b--', 'LineWidth', 1.5);  
+plot(t, y1_nofault, 'r--', 'LineWidth', 3.5);  hold on;
+plot(t, y2_nofault, 'g--', 'LineWidth', 3.5); 
+plot(t, y3_nofault, 'b--', 'LineWidth', 3.5);  
+plot(t, theta_ref, 'black', 'LineWidth', 3.5); 
 hold off;
 xlabel('Time (s)');
 ylabel('Signal Value');
 title('Output response wiht no fault');
-legend('y1_{nofault}', 'y2_{nofault}', 'y3_{nofault}');
+legend('y1', 'y2', 'y3','theta ref');
 grid on;
+set(gcf, 'Position', get(0, 'Screensize'))
  saveas(gcf, fullfile('fig', 'LQR_nofault.png'));
 
 figure;
-plot(t, y1_wfault, 'r', 'LineWidth', 1.5); hold on;
-plot(t, y2_wfault, 'g', 'LineWidth', 1.5);
-plot(t, y3_wfault, 'b', 'LineWidth', 1.5);
-plot(t, y1_nofault, 'r--', 'LineWidth', 1.5);  % Dashed line for nofault
-plot(t, y2_nofault, 'g--', 'LineWidth', 1.5);  % Dashed line for nofault
-plot(t, y3_nofault, 'b--', 'LineWidth', 1.5);  % Dashed line for nofault
+plot(t, y1_wfault, 'r', 'LineWidth', 3.5); hold on;
+plot(t, y2_wfault, 'g', 'LineWidth', 3.5);
+plot(t, y3_wfault, 'b', 'LineWidth', 3.5);
+%plot(t, y1_nofault, 'r--', 'LineWidth', 3.5);  % Dashed line for nofault
+%plot(t, y2_nofault, 'g--', 'LineWidth', 3.5);  % Dashed line for nofault
+%plot(t, y3_nofault, 'b--', 'LineWidth', 3.5);  % Dashed line for nofault
+plot(t, theta_ref, 'black', 'LineWidth', 3.5)
 hold off;
 xlabel('Time (s)');
 ylabel('Signal Value');
-title('Fault vs No Fault Response Signals');
-legend('y1_{wfault}', 'y2_{wfault}', 'y3_{wfault}', 'y1_{nofault}', 'y2_{nofault}', 'y3_{nofault}');
+title('Faulty Output Response');
+%legend('y1_{f}', 'y2_{f}', 'y3_{f}', 'y1', 'y2', 'y3','theta ref');
+legend('y1', 'y2', 'y3','theta ref');
 grid on;
+set(gcf, 'Position', get(0, 'Screensize'))
 saveas(gcf, fullfile('fig', 'LQR_fault.png'));
 
 
@@ -780,11 +786,11 @@ figure;
 % Plot ymeas (3D) and theta_ref (1D) on the same figure
 subplot(2, 1, 1); % Two plots: one for ymeas and theta_ref, the other for r
 hold on;
-plot(time, ymeas(:, 1), 'r', 'DisplayName', 'y1 meas ');
-plot(time, ymeas(:, 2), 'g', 'DisplayName', 'y2 meas ');
-plot(time, ymeas(:, 3), 'b', 'DisplayName', 'y3 meas ');
-plot(time, theta_ref, 'k', 'LineWidth', 1.5, 'DisplayName', 'theta ref');
-xline(detect_time, '--m', 'LineWidth', 1.5, 'DisplayName', 'detect\_time');  % vertical line
+plot(time, ymeas(:, 1), 'r', 'LineWidth', 3.5 ,'DisplayName', 'y1 meas ');
+plot(time, ymeas(:, 2), 'g','LineWidth', 3.5 ,'DisplayName', 'y2 meas ');
+plot(time, ymeas(:, 3), 'b', 'LineWidth', 3.5,'DisplayName', 'y3 meas ');
+plot(time, theta_ref, 'k', 'LineWidth', 3.5, 'DisplayName', 'theta ref');
+xline(detect_time, '--m', 'LineWidth', 3.5, 'DisplayName', 'detect\_time');  % vertical line
 xlabel('Time');
 ylabel('Values');
 legend('show');
@@ -794,14 +800,15 @@ title('measured output y and theta_ref');
 
 subplot(2, 1, 2);
 hold on
-plot(time, r(:, 1), 'b', 'LineWidth', 1.5, 'DisplayName', 'r1 ');
-plot(time, r(:, 2), 'c', 'LineWidth', 1.5, 'DisplayName', 'r2 ');
-plot(time, r(:, 3), 'r', 'LineWidth', 1.5, 'DisplayName', 'r3 ');
-xline(detect_time, '--m', 'LineWidth', 1.5, 'DisplayName', 'detect\_time');  % vertical line
+plot(time, r(:, 1), 'b', 'LineWidth', 3.5, 'DisplayName', 'r1 ');
+plot(time, r(:, 2), 'c', 'LineWidth', 3.5, 'DisplayName', 'r2 ');
+plot(time, r(:, 3), 'r', 'LineWidth', 3.5, 'DisplayName', 'r3 ');
+xline(detect_time, '--m', 'LineWidth', 3.5, 'DisplayName', 'detect\_time');  % vertical line
 xlabel('Time');
 ylabel('r');
 legend('r1','r2','r3','detect\_time');
 title('Plot of r');
+set(gcf, 'Position', get(0, 'Screensize'))
 saveas(gcf, fullfile('fig', 'Virtual_Actuator.png'));
 
 

@@ -684,6 +684,7 @@ ylabel('Signal Value');
 title('Output response wiht no fault');
 legend('y1_{nofault}', 'y2_{nofault}', 'y3_{nofault}');
 grid on;
+set(gcf, 'Position', get(0, 'Screensize'))
  saveas(gcf, fullfile('fig', 'LQR_nofault.png'));
 
 figure;
@@ -699,6 +700,7 @@ ylabel('Signal Value');
 title('Fault vs No Fault Response Signals');
 legend('y1_{wfault}', 'y2_{wfault}', 'y3_{wfault}', 'y1_{nofault}', 'y2_{nofault}', 'y3_{nofault}');
 grid on;
+set(gcf, 'Position', get(0, 'Screensize'))
 saveas(gcf, fullfile('fig', 'LQR_fault.png'));
 
 
@@ -784,6 +786,7 @@ plot(time, ymeas(:, 1), 'r', 'DisplayName', 'y1 meas ');
 plot(time, ymeas(:, 2), 'g', 'DisplayName', 'y2 meas ');
 plot(time, ymeas(:, 3), 'b', 'DisplayName', 'y3 meas ');
 plot(time, theta_ref, 'k', 'LineWidth', 1.5, 'DisplayName', 'theta ref');
+xline(detect_time, '--m', 'LineWidth', 1.5, 'DisplayName', 'detect\_time');  % vertical line
 xlabel('Time');
 ylabel('Values');
 legend('show');
@@ -792,13 +795,16 @@ title('measured output y and theta_ref');
 % Plot r in a separate plot
 
 subplot(2, 1, 2);
-plot(time, r(:, 1), 'b', 'LineWidth', 1.5, 'DisplayName', 'r1 ');
+hold on
+plot(time, r(:, 1), 'b', 'LineWidth', 2, 'DisplayName', 'r1 ');
 plot(time, r(:, 2), 'c', 'LineWidth', 1.5, 'DisplayName', 'r2 ');
 plot(time, r(:, 3), 'r', 'LineWidth', 1.5, 'DisplayName', 'r3 ');
+xline(detect_time, '--m', 'LineWidth', 1.5, 'DisplayName', 'detect\_time');  % vertical line
 xlabel('Time');
 ylabel('r');
-legend('r1','r2','r3');
+legend('r1','r2','r3','detect\_time');
 title('Plot of r');
-%saveas(gcf, fullfile('fig', 'LQR_fault.png'));
+set(gcf, 'Position', get(0, 'Screensize'))
+saveas(gcf, fullfile('fig', 'Virtual_Actuator.png'));
 
 
