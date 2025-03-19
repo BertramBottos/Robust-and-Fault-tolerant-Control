@@ -355,24 +355,21 @@ saveas(gcf, fullfile('fig', 'R_sensitive_to_Y.png'));
 %%written in the slides) & it dosent affect detectablity.
 
 %from slide 11,12,27, lecture 5:
+%redefine for symbolic values
 syms y_1 y_2 y_3 u_1 u_2 s b_1 b_2 J_1 J_2 J_3 k_1 k_2 b_3 s %can uncomment if you want to see numerical solution
-InputSyms()
+H_ry = [k_1/J_2 (-k_1-k_2-b_2*s)/J_2-s^2 k_2/J_2; ...
+   0 k_2/J_3 (-k_2-b_3*s)/J_3-s^2;
+   (k_1)/J_2 -((k_1*k_2+b_2*k_2*s+b_3*k_1*s+b_3*k_2*s+J_2*J_3*s^4+J_2*b_3*s^3+J_3*b_2*s^3+J_2*k_2*s^2+J_3*k_1*s^2+J_3*k_2*s^2+b_2*b_3*s^2))/(J_2*(J_3*s^2+b_3*s+k_2)) 0];
+H_ru = [0 1/J_2; 0 0; 0 1/J_2];
 
+% V_ry = H_ry as we defined earlier however this time se use the symbolic s. 
 H_yu = C*inv((s*eye(size(A))-A))*B+D;
 H_yd = C*(inv(s*eye(size(A))-A))*E_x+E_y;
 H_yf = C*(inv(s*eye(size(A))-A))*F_x+F_y;
 
-
-
-% V_ry = H_ry as we defined earlier however this time se use the symbolic s. 
 V_ry = [k_1/J_2 (-k_1-k_2-b_2*s)/J_2-s^2 k_2/J_2; ...
    0 k_2/J_3 (-k_2-b_3*s)/J_3-s^2]; 
 H_rf= simplify(V_ry*H_yf);
-
-H_faulty = [H_yu H_yd;eye(size(H_yu,2),size(H_yu,2)) zeros(size(H_yu,2),size(H_yd,2))]; %see slide 13 lecture 5 
-F=simplify(null(H_faulty')');  %by design which means r(s) only depend on Vry*Hyf*f(s) 
-%check if F is designed correct
-simplify(F*H_faulty)
 
 %lecture 5 slide 23/25
 for i=1:size(H_yf,2)
@@ -383,13 +380,29 @@ else
 end
 end
 
+%s = tf('s');
+H_yu = C*inv((s*eye(size(A))-A))*B+D;
+H_yd = C*(inv(s*eye(size(A))-A))*E_x+E_y;
+H_yf = C*(inv(s*eye(size(A))-A))*F_x+F_y;
+
+
+
+
+
+%H_faulty = [H_yu H_yd;eye(size(H_yu,2),size(H_yu,2)) zeros(size(H_yu,2),size(H_yd,2))]; %see slide 13 lecture 5 
+%F=simplify(null(H_faulty')');  %by design which means r(s) only depend on Vry*Hyf*f(s) 
+F = [H_ry H_ru];
+%check if F is designed correct
+%simplify(F*H_faulty)
+
 
 
 % is it good enough that we detect it in one residual and
 %that means the entire i'th fault is strongly detectible or de we need to
 %check for r1 and r2 seperately???
+
 for j=1:size(H_yf,2)
- strong_detectability = subs(simplify( F * [H_yf(:,j); zeros(2,1)]), s, 0);
+ strong_detectability = subs(simplify(F * [H_yf(:,j); zeros(2,1)]), s, 0);
 
  %checking if fault is strongly detetible on any residual
 if (strong_detectability(1) ~= 0) || (strong_detectability(2) ~= 0)
@@ -521,18 +534,18 @@ glr_sim = sim('threeDiskOscillatorRig_v3_1');
 
 figure
 subplot(2,1,1);  % First subplot in a 2x1 grid
-plot(glr_sim.GLR.Data, 'b');  % Plot GLR data in blue
+plot(glr_sim.tout,glr_sim.GLR.Data, 'b');  % Plot GLR data in blue
 hold on;  % Hold the plot to add another plot
 yline(h, 'r--', 'LineWidth', 2);  % Add a horizontal line at y = h (red dashed line)
-xlabel('Index');
+xlabel('time');
 ylabel('GLR Data');
 title('GLR Data with threshold h');
 grid on;
 
 % Second subplot: Plot the signal r_in
 subplot(2,1,2);  % Second subplot in a 2x1 grid
-plot(r_in(:,2), 'g');  % Plot r_in in green
-xlabel('Index');
+plot(tsim_nested,r_in(:,2), 'g');  % Plot r_in in green
+xlabel('time');
 ylabel('r_{in}');
 title('residual input');
 grid on;
@@ -737,6 +750,12 @@ end
 B_f = [B(:,1) zeros(size(B(:,2)))];
 G_f = [G_d(:,1) zeros(size(G_d(:,2)))];
 if (rank(B_f) == rank([B B_f]))
+    disp('Perfect static matching for actuator fault');
+else
+    disp('Imperfect static matching for actuator fault');
+end
+
+if (rank(G_f) == rank([G_d G_f]))
     disp('Perfect static matching for actuator fault');
 else
     disp('Imperfect static matching for actuator fault');
